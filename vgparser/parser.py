@@ -19,8 +19,7 @@ identifier = ~"[_a-zA-Z][_a-zA-Z0-9]*"
 
 string = ~r"([\'\"])([^\1]*)\1"   # TODO: handle excaped chars
 
-# Numbers
-number = hexadecimal / binary / octal / float / integer
+number = float / hexadecimal / binary / octal / integer
 
 float = exponent_float / decimal_float
 
@@ -41,6 +40,20 @@ space = " "*
 integer_part = ~r"[+-]?[0-9]+"
 """
 
+# Operator precedence in JS:
+# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+
+
+class Node(object):
+    def __init__(self, *contents):
+        self.contents = contents
+
+    def __eq__(self, other):
+        same_class = (isinstance(other, self.__class__)
+                      or isinstance(self, other.__class__))
+        return same_class and self.contents == other.contents
+
+
 class JSEvaluator(NodeVisitor):
     def __init__(self, ctx, strict=True):
         self.grammar = Grammar(GRAMMAR)
@@ -48,38 +61,38 @@ class JSEvaluator(NodeVisitor):
         self._strict = strict
 
     def visit_function(self, node, children):
-        print(node, isinstance(children, list), children)
-        if isinstance(children[0], list) and len(children[0]) == 5:
-            return (children[0][0], children[0][3])
+        child = children[0]
+        if isinstance(child, Node):
+            return child
         else:
-            return children[0]
+            return Node(child[0], child[3])
 
     def visit_unit(self, node, children):
         return children[0]
 
     def visit_identifier(self, node, children):
-        return node.text
+        return Node(node.text)
 
     def visit_string(self, node, children):
-        return node.match.groups()[1]
+        return Node(node.match.groups()[1])
 
     def visit_number(self, node, children):
         return children[0]
 
     def visit_float(self, node, children):
-        return float(node.text)
+        return Node(float(node.text))
 
     def visit_hexadecimal(self, node, children):
-        return int(node.text, 16)
+        return Node(int(node.text, 16))
 
     def visit_binary(self, node, children):
-        return int(node.text, 2)
+        return Node(int(node.text, 2))
 
     def visit_octal(self, node, children):
-        return int(node.text, 8)
+        return Node(int(node.text, 8))
 
     def visit_integer(self, node, children):
-        return int(node.text)
+        return Node(int(node.text))
 
     def generic_visit(self, node, children):
         return children

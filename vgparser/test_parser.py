@@ -1,5 +1,6 @@
 import pytest
 from . import parse
+from .parser import Node
 
 
 NUMBER_TEST_CASES = {
@@ -35,6 +36,7 @@ NUMBER_TEST_CASES = {
     # floating point
     '11.': 11.0,
     '0E5': 0.0,
+    '012E02': 12E2,
     '1.1': 1.1,
     '0.1': 0.1,
     '+.1': 0.1,
@@ -52,7 +54,7 @@ NUMBER_TEST_CASES = {
 
 @pytest.mark.parametrize("key,val", NUMBER_TEST_CASES.items())
 def test_parse_number(key, val):
-    assert parse(key) == val
+    assert parse(key) == Node(val)
 
 
 LITERAL_TEST_CASES = {
@@ -67,7 +69,20 @@ LITERAL_TEST_CASES = {
 
 @pytest.mark.parametrize("key,val", LITERAL_TEST_CASES.items())
 def test_parse_literal(key, val):
-    assert parse(key) == val
+    assert parse(key) == Node(val)
+
+
+STRING_TEST_CASES = {
+    '"abc def ghi 123\t\n"': 'abc def ghi 123\t\n',
+    "'abc def ghi 123'": 'abc def ghi 123',
+    "'hello \"there\"'": 'hello "there"',
+    '"hello \'there\'"': "hello 'there'",
+}
+
+
+@pytest.mark.parametrize("key,val", STRING_TEST_CASES.items())
+def test_parse_string(key, val):
+    assert parse(key) == Node(val)
 
 FUNC_TEST_CASES = {
     'sin(x)': ('sin', 'x'),
@@ -78,4 +93,4 @@ FUNC_TEST_CASES = {
 
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())
 def test_parse_func(key, val):
-    assert parse(key) == val
+    assert parse(key) == Node(*map(Node, val))

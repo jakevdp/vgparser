@@ -7,8 +7,11 @@ __all__ = ['parse']
 GRAMMAR = r"""
 #########################################################
 # Identifiers and functions
-function = (identifier space "(" unit ")") / unit
+commas = (function space "," space commas) / function
 
+function = (identifier space "(" commas ")") / parens
+
+parens = ("(" space function space ")") / unit
 
 #########################################################
 ## Unit is a single quantity like a string, float, or variable identifier
@@ -48,10 +51,33 @@ class Node(object):
     def __init__(self, *contents):
         self.contents = contents
 
+    def __repr__(self):
+        return "<{0} {1}>".format(self.__class__.__name__,
+                                  ', '.join(map(repr, self.contents)))
+
     def __eq__(self, other):
         same_class = (isinstance(other, self.__class__)
                       or isinstance(self, other.__class__))
         return same_class and self.contents == other.contents
+
+
+class StringNode(Node):
+    pass
+
+
+class IdentifierNode(Node):
+    pass
+
+
+class NumberNode(Node):
+    pass
+
+
+class FunctionNode(Node):
+    pass
+
+class CommaNode(Node):
+    pass
 
 
 class JSEvaluator(NodeVisitor):
@@ -60,39 +86,55 @@ class JSEvaluator(NodeVisitor):
         self._ctx = ctx
         self._strict = strict
 
+    def visit_commas(self, node, children):
+        child = children[0]
+        if isinstance(child, Node):
+            return child
+        elif isinstance(child[4], CommaNode):
+            return CommaNode(child[0], *child[4].contents)
+        else:
+            return CommaNode(child[0], child[4])
+
     def visit_function(self, node, children):
         child = children[0]
         if isinstance(child, Node):
             return child
         else:
-            return Node(child[0], child[3])
+            return FunctionNode(child[0], child[3])
+
+    def visit_parens(self, node, children):
+        child = children[0]
+        if isinstance(child, Node):
+            return child
+        else:
+            return child[2]
 
     def visit_unit(self, node, children):
         return children[0]
 
     def visit_identifier(self, node, children):
-        return Node(node.text)
+        return IdentifierNode(node.text)
 
     def visit_string(self, node, children):
-        return Node(node.match.groups()[1])
+        return StringNode(node.match.groups()[1])
 
     def visit_number(self, node, children):
         return children[0]
 
     def visit_float(self, node, children):
-        return Node(float(node.text))
+        return NumberNode(float(node.text))
 
     def visit_hexadecimal(self, node, children):
-        return Node(int(node.text, 16))
+        return NumberNode(int(node.text, 16))
 
     def visit_binary(self, node, children):
-        return Node(int(node.text, 2))
+        return NumberNode(int(node.text, 2))
 
     def visit_octal(self, node, children):
-        return Node(int(node.text, 8))
+        return NumberNode(int(node.text, 8))
 
     def visit_integer(self, node, children):
-        return Node(int(node.text))
+        return NumberNode(int(node.text))
 
     def generic_visit(self, node, children):
         return children

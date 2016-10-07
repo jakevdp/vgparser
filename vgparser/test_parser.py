@@ -1,6 +1,6 @@
 import pytest
 from . import parse
-from .parser import Node
+from .parser import Node, StringNode, IdentifierNode, NumberNode, FunctionNode, CommaNode
 
 
 NUMBER_TEST_CASES = {
@@ -54,10 +54,10 @@ NUMBER_TEST_CASES = {
 
 @pytest.mark.parametrize("key,val", NUMBER_TEST_CASES.items())
 def test_parse_number(key, val):
-    assert parse(key) == Node(val)
+    assert parse(key) == NumberNode(val)
 
 
-LITERAL_TEST_CASES = {
+IDENTIFIER_TEST_CASES = {
     '_': '_',
     '_01': '_01',
     'x01_y': 'x01_y',
@@ -67,9 +67,9 @@ LITERAL_TEST_CASES = {
 }
 
 
-@pytest.mark.parametrize("key,val", LITERAL_TEST_CASES.items())
-def test_parse_literal(key, val):
-    assert parse(key) == Node(val)
+@pytest.mark.parametrize("key,val", IDENTIFIER_TEST_CASES.items())
+def test_parse_identifier(key, val):
+    assert parse(key) == IdentifierNode(val)
 
 
 STRING_TEST_CASES = {
@@ -82,15 +82,34 @@ STRING_TEST_CASES = {
 
 @pytest.mark.parametrize("key,val", STRING_TEST_CASES.items())
 def test_parse_string(key, val):
-    assert parse(key) == Node(val)
+    assert parse(key) == StringNode(val)
+
+
+COMMA_TEST_CASES = {
+    "a, b" : ('a', 'b'),
+    "1, 2, 'three'": (1, 2, 'three'),
+    "4 , 5 , six": (4, 5, 'six'),
+}
+
+
+@pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
+def test_parse_comma(key, val):
+    assert parse(key) == CommaNode(*map(Node, val))
+
 
 FUNC_TEST_CASES = {
     'sin(x)': ('sin', 'x'),
     'sin(2.0)': ('sin', 2.0),
-    '_("hello")': ('_', "hello"),
-    'f21(12)': ('f21', 12)
+    '__("hello",\'there\')': ('__', "hello", "there"),
+    'f21(12)': ('f21', 12),
+    'cos(x, y, 4)': ('cos', 'x', 'y', 4),
 }
 
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())
 def test_parse_func(key, val):
-    assert parse(key) == Node(*map(Node, val))
+    if len(val) == 2:
+        assert parse(key) == FunctionNode(IdentifierNode(val[0]),
+                                          Node(val[1]))
+    else:
+        assert parse(key) == FunctionNode(IdentifierNode(val[0]),
+                                          CommaNode(*map(Node, val[1:])))

@@ -1,17 +1,54 @@
 from parsimonious import NodeVisitor
 from parsimonious.grammar import Grammar
 
+from .node import *
+
 __all__ = ['parse']
 
 
-GRAMMAR = r"""
-#########################################################
-# Identifiers and functions
-commas = (function space "," space commas) / function
+# Operator precedence in JS:
+# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 
-function = (identifier space "(" commas ")") / parens
 
-parens = ("(" space function space ")") / unit
+VG_GRAMMAR = r"""
+start = space expr1 space
+
+###################################################
+# level 1 operations: addition & subtraction
+
+expr1 = expr2 ops_level_1*
+ops_level_1 = space (binop_add / binop_sub)
+binop_add = "+" space expr2
+binop_sub = "-" space expr2
+
+###################################################
+# level 2 operations: multiplication * division
+
+expr2 = expr3 ops_level_2*
+ops_level_2 = space (binop_mul / binop_div)
+binop_mul = "*" space expr3
+binop_div = "/" space expr3
+
+###################################################
+# level 3: function calls
+
+expr3 = expr4 ops_level_3*
+ops_level_3 = space (parens / empty_parens)
+empty_parens = "(" space ")"
+
+###################################################
+# level 4: member access via "."
+
+expr4 = expr5 ops_level_4*
+ops_level_4 = space binop_getattr
+binop_getattr = "." space identifier
+
+
+###################################################
+# level 5: parentheses
+expr5 = unit / parens
+
+parens = ("(" space expr1 space ")")
 
 #########################################################
 ## Unit is a single quantity like a string, float, or variable identifier
@@ -43,71 +80,50 @@ space = " "*
 integer_part = ~r"[+-]?[0-9]+"
 """
 
-# Operator precedence in JS:
-# https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-
-
-class Node(object):
-    def __init__(self, *contents):
-        self.contents = contents
-
-    def __repr__(self):
-        return "<{0} {1}>".format(self.__class__.__name__,
-                                  ', '.join(map(repr, self.contents)))
-
-    def __eq__(self, other):
-        same_class = (isinstance(other, self.__class__)
-                      or isinstance(self, other.__class__))
-        return same_class and self.contents == other.contents
-
-
-class StringNode(Node):
-    pass
-
-
-class IdentifierNode(Node):
-    pass
-
-
-class NumberNode(Node):
-    pass
-
-
-class FunctionNode(Node):
-    pass
-
-class CommaNode(Node):
-    pass
-
-
-class JSEvaluator(NodeVisitor):
-    def __init__(self, ctx, strict=True):
-        self.grammar = Grammar(GRAMMAR)
-        self._ctx = ctx
+class VgEvaluator(NodeVisitor):
+    def __init__(self, ctx=None, strict=True):
+        self.grammar = Grammar(VG_GRAMMAR)
+        self._ctx = ctx or {}
         self._strict = strict
 
-    def visit_commas(self, node, children):
-        child = children[0]
-        if isinstance(child, Node):
-            return child
-        elif isinstance(child[4], CommaNode):
-            return CommaNode(child[0], *child[4].contents)
-        else:
-            return CommaNode(child[0], child[4])
-
-    def visit_function(self, node, children):
-        child = children[0]
-        if isinstance(child, Node):
-            return child
-        else:
-            return FunctionNode(child[0], child[3])
+    def visit_start(self, node, children):
+        return children[1]
 
     def visit_parens(self, node, children):
-        child = children[0]
-        if isinstance(child, Node):
-            return child
-        else:
-            return child[2]
+        return children[2]
+
+    def visit_term(self, node, children):
+        return children[0]
+
+    def visit_integer(self, node, children):
+        return IntegerNode(int(node.text))
+
+    def visit_identifier(self, node, children):
+        return IdentifierNode(node.text)
+
+    def _visit_expr(self, node, children):
+        lhs, ops = children
+        for op, rhs in ops:
+            lhs = BinOpNode(op, lhs, rhs)
+        return lhs
+
+    def _visit_binop(self, node, children):
+        return (node.expr_name.split('_')[1], children[2])
+
+    def _visit_ops_level(self, node, children):
+        return children[1][0]
+
+    def visit_ops_level_4(self, node, children):
+        return children[1]
+
+    def visit_expr3(self, node, children):
+        term = children[0]
+        for call in children[1]:
+            term = FunctionNode(term, call)
+        return term
+
+    def visit_expr5(self, node, children):
+        return children[0]
 
     def visit_unit(self, node, children):
         return children[0]
@@ -137,10 +153,17 @@ class JSEvaluator(NodeVisitor):
         return NumberNode(int(node.text))
 
     def generic_visit(self, node, children):
-        return children
+        if node.expr_name.startswith('binop'):
+            return self._visit_binop(node, children)
+        elif node.expr_name.startswith('ops_level'):
+            return self._visit_ops_level(node, children)
+        elif node.expr_name.startswith('expr'):
+            return self._visit_expr(node, children)
+        else:
+            return children
 
 
 def parse(input_string, context=None):
     context = context or {}
-    grammar = JSEvaluator(context)
+    grammar = VgEvaluator(context)
     return grammar.parse(input_string)

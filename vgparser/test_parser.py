@@ -1,7 +1,6 @@
 import pytest
 from . import parse
-from .parser import Node, StringNode, IdentifierNode, NumberNode, FunctionNode, CommaNode
-
+from .node import *
 
 NUMBER_TEST_CASES = {
     # decimal integers
@@ -85,24 +84,24 @@ def test_parse_string(key, val):
     assert parse(key) == StringNode(val)
 
 
-COMMA_TEST_CASES = {
-    "a, b" : ('a', 'b'),
-    "1, 2, 'three'": (1, 2, 'three'),
-    "4 , 5 , six": (4, 5, 'six'),
-}
-
-
-@pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
-def test_parse_comma(key, val):
-    assert parse(key) == CommaNode(*map(Node, val))
-
-
+# COMMA_TEST_CASES = {
+#     "a, b" : ('a', 'b'),
+#     "1, 2, 'three'": (1, 2, 'three'),
+#     "4 , 5 , six": (4, 5, 'six'),
+# }
+#
+#
+# @pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
+# def test_parse_comma(key, val):
+#     assert parse(key) == CommaNode(*map(Node, val))
+#
+#
 FUNC_TEST_CASES = {
     'sin(x)': ('sin', 'x'),
     'sin(2.0)': ('sin', 2.0),
-    '__("hello",\'there\')': ('__', "hello", "there"),
     'f21(12)': ('f21', 12),
-    'cos(x, y, 4)': ('cos', 'x', 'y', 4),
+    #'__("hello",\'there\')': ('__', "hello", "there"),
+    #'cos(x, y, 4)': ('cos', 'x', 'y', 4),
 }
 
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())

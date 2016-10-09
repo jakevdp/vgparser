@@ -94,21 +94,17 @@ def test_parse_string(key, val):
 # @pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
 # def test_parse_comma(key, val):
 #     assert parse(key) == CommaNode(*map(Node, val))
-#
-#
+
+
 FUNC_TEST_CASES = {
     'sin(x)': ('sin', 'x'),
     'sin(2.0)': ('sin', 2.0),
     'f21(12)': ('f21', 12),
-    #'__("hello",\'there\')': ('__', "hello", "there"),
-    #'cos(x, y, 4)': ('cos', 'x', 'y', 4),
+    # '__("hello",\'there\')': ('__', "hello", "there"),
+    # 'cos(x, 4)': ('cos', 'x', 4),
 }
 
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())
 def test_parse_func(key, val):
-    if len(val) == 2:
-        assert parse(key) == FunctionNode(IdentifierNode(val[0]),
-                                          Node(val[1]))
-    else:
-        assert parse(key) == FunctionNode(IdentifierNode(val[0]),
-                                          CommaNode(*map(Node, val[1:])))
+    assert parse(key) == FunctionNode(IdentifierNode(val[0]),
+                                      Node(val[1]))

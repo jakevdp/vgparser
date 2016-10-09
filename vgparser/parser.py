@@ -14,39 +14,45 @@ VG_GRAMMAR = r"""
 start = space expr1 space
 
 ###################################################
-# level 1 operations: addition & subtraction
+# level 1 operations: commas
 
-expr1 = expr2 ops_level_1*
-ops_level_1 = space (binop_add / binop_sub)
-binop_add = "+" space expr2
-binop_sub = "-" space expr2
-
-###################################################
-# level 2 operations: multiplication * division
-
-expr2 = expr3 ops_level_2*
-ops_level_2 = space (binop_mul / binop_div)
-binop_mul = "*" space expr3
-binop_div = "/" space expr3
+expr1 = expr2 ops_expr1*
+ops_expr1 = space binop_comma
+binop_comma = "," space expr2
 
 ###################################################
-# level 3: function calls
+# level 2 operations: addition & subtraction
 
-expr3 = expr4 ops_level_3*
-ops_level_3 = space (parens / empty_parens)
-empty_parens = "(" space ")"
+expr2 = expr3 ops_expr2*
+ops_expr2 = space (binop_add / binop_sub)
+binop_add = "+" space expr3
+binop_sub = "-" space expr3
 
 ###################################################
-# level 4: member access via "."
+# level 3 operations: multiplication * division
 
-expr4 = expr5 ops_level_4*
-ops_level_4 = space binop_getattr
+expr3 = expr4 ops_expr3*
+ops_expr3 = space (binop_mul / binop_div)
+binop_mul = "*" space expr4
+binop_div = "/" space expr4
+
+###################################################
+# level 4: function calls
+
+expr4 = expr5 ops_expr4*
+ops_expr4 = space "(" space expr1? space")"
+
+###################################################
+# level 5: member access via "."
+
+expr5 = expr6 ops_expr5*
+ops_expr5 = space binop_getattr
 binop_getattr = "." space identifier
 
 
 ###################################################
-# level 5: parentheses
-expr5 = unit / parens
+# level 6: parentheses
+expr6 = unit / parens
 
 parens = ("(" space expr1 space ")")
 
@@ -90,7 +96,10 @@ class VgEvaluator(NodeVisitor):
         return children[1]
 
     def visit_parens(self, node, children):
-        return children[2]
+        child = children[2]
+        if isinstance(child, CommaNode):
+            child = TupleNode(child)
+        return child
 
     def visit_term(self, node, children):
         return children[0]
@@ -113,16 +122,34 @@ class VgEvaluator(NodeVisitor):
     def _visit_ops_level(self, node, children):
         return children[1][0]
 
-    def visit_ops_level_4(self, node, children):
+    def visit_ops_expr1(self, node, children):
         return children[1]
 
-    def visit_expr3(self, node, children):
+    def visit_expr1(self, node, children):
         term = children[0]
         for call in children[1]:
-            term = FunctionNode(term, call)
+            term = CommaNode(term, call[1])
         return term
 
-    def visit_expr5(self, node, children):
+    def visit_expr4(self, node, children):
+        term = children[0]
+        for call in children[1]:
+            term = FunctionNode(term, *call)
+        return term
+
+    def visit_ops_expr4(self, node, children):
+        args = children[3]
+        if not args:
+            return ()
+        elif isinstance(args[0], CommaNode):
+            return args[0].contents
+        else:
+            return (args[0],)
+
+    def visit_ops_expr5(self, node, children):
+        return children[1]
+
+    def visit_expr6(self, node, children):
         return children[0]
 
     def visit_unit(self, node, children):

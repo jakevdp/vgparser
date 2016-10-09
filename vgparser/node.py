@@ -47,3 +47,24 @@ class BinOpNode(FunctionNode):
         super(FunctionNode, self).__init__(opname, *arguments)
         self.func = IdentifierNode('binop.' + opname)
         self.arguments = arguments
+
+
+class CommaNode(Node):
+    def __init__(self, lhs, rhs):
+        if isinstance(lhs, CommaNode):
+            contents = tuple(lhs.contents) + (rhs,)
+        else:
+            contents = (lhs, rhs)
+        super(CommaNode, self).__init__(*contents)
+
+    def __repr__(self):
+        return ', '.join(map(repr, self.contents))
+
+
+class TupleNode(Node):
+    def __init__(self, commas):
+        self.commas = commas
+        super(TupleNode, self).__init__(commas)
+
+    def __repr__(self):
+        return "({0})".format(self.commas)

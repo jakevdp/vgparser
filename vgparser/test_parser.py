@@ -98,6 +98,29 @@ def test_parse_comma(key, val):
     assert parse(key) == val
 
 
+ARITH_TEST_CASES = {
+    "a + 4": BinOpNode('add', IdentifierNode('a'), NumberNode(4)),
+    "a- '5'": BinOpNode('sub', IdentifierNode('a'), StringNode('5')),
+    "a *b": BinOpNode('mul', IdentifierNode('a'), IdentifierNode('b')),
+    "a   /   7.0": BinOpNode('div', IdentifierNode('a'), NumberNode(7.0)),
+    "3 + 4 * 5": BinOpNode("add", NumberNode(3),
+                           BinOpNode("mul", NumberNode(4), NumberNode(5))),
+    "(3 + 4) * 5": BinOpNode("mul",
+                             BinOpNode("add", NumberNode(3), NumberNode(4)),
+                             NumberNode(5)),
+    "3 + 4 - 5": BinOpNode("sub",
+                           BinOpNode("add", NumberNode(3), NumberNode(4)),
+                           NumberNode(5)),
+    "3 + (4 - 5)": BinOpNode("add", NumberNode(3),
+                             BinOpNode("sub", NumberNode(4), NumberNode(5)))
+}
+
+
+@pytest.mark.parametrize("key,val", ARITH_TEST_CASES.items())
+def test_parse_arithmetic(key, val):
+    assert parse(key) == val
+
+
 FUNC_TEST_CASES = {
     'sin(x)': FunctionNode(IdentifierNode('sin'), IdentifierNode('x')),
     'sin(2.0)': FunctionNode(IdentifierNode('sin'), NumberNode(2.0)),

@@ -119,7 +119,7 @@ class VgEvaluator(NodeVisitor):
     def _visit_binop(self, node, children):
         return (node.expr_name.split('_')[1], children[2])
 
-    def _visit_ops_level(self, node, children):
+    def _visit_ops_expr(self, node, children):
         return children[1][0]
 
     def visit_ops_expr1(self, node, children):
@@ -182,8 +182,8 @@ class VgEvaluator(NodeVisitor):
     def generic_visit(self, node, children):
         if node.expr_name.startswith('binop'):
             return self._visit_binop(node, children)
-        elif node.expr_name.startswith('ops_level'):
-            return self._visit_ops_level(node, children)
+        elif node.expr_name.startswith('ops_expr'):
+            return self._visit_ops_expr(node, children)
         elif node.expr_name.startswith('expr'):
             return self._visit_expr(node, children)
         else:

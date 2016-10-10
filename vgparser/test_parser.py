@@ -131,6 +131,26 @@ def test_parse_arithmetic(key, val):
     assert parse(key) == val
 
 
+UNARY_TEST_CASES = {
+    "-4": NumberNode(-4),
+    "- 4": UnaryOpNode("neg", NumberNode(4)),
+    "- -4": UnaryOpNode("neg", NumberNode(-4)),
+    "+4": NumberNode(4),
+    "+ 4": UnaryOpNode("pos", NumberNode(4)),
+    "+ +4": UnaryOpNode("pos", NumberNode(4)),
+    "-+4": UnaryOpNode("neg", NumberNode(4)),
+    "+-4": UnaryOpNode("pos", NumberNode(-4)),
+    "!x": UnaryOpNode("not", IdentifierNode('x')),
+    "~'hello'": UnaryOpNode("lognot", StringNode('hello')),
+    "4 + !q": BinOpNode("add", NumberNode(4),
+                        UnaryOpNode("not", IdentifierNode('q')))
+}
+
+@pytest.mark.parametrize("key,val", UNARY_TEST_CASES.items())
+def test_parse_arithmetic(key, val):
+    assert parse(key) == val
+
+
 FUNC_TEST_CASES = {
     'sin(x)': FunctionNode(IdentifierNode('sin'), IdentifierNode('x')),
     'sin(2.0)': FunctionNode(IdentifierNode('sin'), NumberNode(2.0)),

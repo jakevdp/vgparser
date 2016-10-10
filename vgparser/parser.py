@@ -36,23 +36,38 @@ ops_expr3 = space (binop_mul / binop_div)
 binop_mul = "*" space expr4
 binop_div = "/" space expr4
 
-###################################################
-# level 4: function calls
-
-expr4 = expr5 ops_expr4*
-ops_expr4 = space "(" space expr1? space")"
 
 ###################################################
-# level 5: member access via "."
+# level 4: unary operators
+
+expr4 = ops_expr4* expr5
+ops_expr4 = (unary_not / unary_lognot / unary_pos / unary_neg) space
+unary_pos = "+" !number_start  # positive numbers are handled below
+unary_neg = "-" !number_start  # negative numbers are handled below
+unary_not = "!"
+unary_lognot = "~"
+
+number_start = ~r"[0-9\.]"
+
+
+###################################################
+# level 5: function calls
 
 expr5 = expr6 ops_expr5*
-ops_expr5 = space binop_getattr
+ops_expr5 = space "(" space expr1? space")"
+
+
+###################################################
+# level 6: member access via "."
+
+expr6 = expr7 ops_expr6*
+ops_expr6 = space binop_getattr
 binop_getattr = "." space identifier
 
 
 ###################################################
-# level 6: parentheses
-expr6 = unit / parens
+# level 7: parentheses
+expr7 = unit / parens
 
 parens = ("(" space expr1 space ")")
 
@@ -119,6 +134,9 @@ class VgEvaluator(NodeVisitor):
     def _visit_binop(self, node, children):
         return (node.expr_name.split('_')[1], children[2])
 
+    def _visit_unary(self, node, children):
+        return node.expr_name.split('_')[1]
+
     def _visit_ops_expr(self, node, children):
         return children[1][0]
 
@@ -132,12 +150,22 @@ class VgEvaluator(NodeVisitor):
         return term
 
     def visit_expr4(self, node, children):
+        ops, rhs = children
+        print(ops, rhs)
+        for op in ops[::-1]:
+            rhs = UnaryOpNode(op[0], rhs)
+        return rhs
+
+    def visit_ops_expr4(self, node, children):
+        return children[0]
+
+    def visit_expr5(self, node, children):
         term = children[0]
         for call in children[1]:
             term = FunctionNode(term, *call)
         return term
 
-    def visit_ops_expr4(self, node, children):
+    def visit_ops_expr5(self, node, children):
         args = children[3]
         if not args:
             return ()
@@ -146,10 +174,10 @@ class VgEvaluator(NodeVisitor):
         else:
             return (args[0],)
 
-    def visit_ops_expr5(self, node, children):
+    def visit_ops_expr6(self, node, children):
         return children[1]
 
-    def visit_expr6(self, node, children):
+    def visit_expr7(self, node, children):
         return children[0]
 
     def visit_unit(self, node, children):
@@ -182,6 +210,8 @@ class VgEvaluator(NodeVisitor):
     def generic_visit(self, node, children):
         if node.expr_name.startswith('binop'):
             return self._visit_binop(node, children)
+        if node.expr_name.startswith('unary'):
+            return self._visit_unary(node, children)
         elif node.expr_name.startswith('ops_expr'):
             return self._visit_ops_expr(node, children)
         elif node.expr_name.startswith('expr'):

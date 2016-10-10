@@ -49,6 +49,13 @@ class BinOpNode(FunctionNode):
         self.arguments = arguments
 
 
+class UnaryOpNode(FunctionNode):
+    def __init__(self, opname, argument):
+        super(UnaryOpNode, self).__init__(opname, argument)
+        self.func = IdentifierNode('unaryop.' + opname)
+        self.arguments = (argument,)
+
+
 class CommaNode(Node):
     def __init__(self, *args):
         expanded_args = []

@@ -32,9 +32,10 @@ binop_sub = "-" space expr3
 # level 3 operations: multiplication * division
 
 expr3 = expr4 ops_expr3*
-ops_expr3 = space (binop_mul / binop_div)
+ops_expr3 = space (binop_mul / binop_div / binop_mod)
 binop_mul = "*" space expr4
 binop_div = "/" space expr4
+binop_mod = "/" space expr4
 
 
 ###################################################

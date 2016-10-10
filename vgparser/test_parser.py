@@ -121,8 +121,9 @@ ARITH_TEST_CASES = {
     "3 + 4 - -5": BinOpNode("sub",
                             BinOpNode("add", NumberNode(3), NumberNode(4)),
                             NumberNode(-5)),
-    "3 + (4 - -5)": BinOpNode("add", NumberNode(3),
-                              BinOpNode("sub", NumberNode(4), NumberNode(-5)))
+    "(3 + 4) % -5": BinOpNode("mod",
+                              BinOpNode("add", NumberNode(3), NumberNode(4)),
+                              NumberNode(-5)),
 }
 
 

@@ -50,12 +50,14 @@ class BinOpNode(FunctionNode):
 
 
 class CommaNode(Node):
-    def __init__(self, lhs, rhs):
-        if isinstance(lhs, CommaNode):
-            contents = tuple(lhs.contents) + (rhs,)
-        else:
-            contents = (lhs, rhs)
-        super(CommaNode, self).__init__(*contents)
+    def __init__(self, *args):
+        expanded_args = []
+        for arg in args:
+            if isinstance(arg, CommaNode):
+                expanded_args.extend(arg.contents)
+            else:
+                expanded_args.append(arg)
+        super(CommaNode, self).__init__(*expanded_args)
 
     def __repr__(self):
         return ', '.join(map(repr, self.contents))

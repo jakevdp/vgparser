@@ -84,16 +84,16 @@ def test_parse_string(key, val):
     assert parse(key) == StringNode(val)
 
 
-# COMMA_TEST_CASES = {
-#     "a, b" : ('a', 'b'),
-#     "1, 2, 'three'": (1, 2, 'three'),
-#     "4 , 5 , six": (4, 5, 'six'),
-# }
-#
-#
-# @pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
-# def test_parse_comma(key, val):
-#     assert parse(key) == CommaNode(*map(Node, val))
+COMMA_TEST_CASES = {
+    "a, b" : ('a', 'b'),
+    "1, 2, 'three'": (1, 2, 'three'),
+    "4 , 5 , six": (4, 5, 'six'),
+}
+
+
+@pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
+def test_parse_comma(key, val):
+    assert parse(key) == CommaNode(*map(Node, val))
 
 
 FUNC_TEST_CASES = {

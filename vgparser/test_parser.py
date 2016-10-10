@@ -104,7 +104,20 @@ FUNC_TEST_CASES = {
     'cos(x, 4)': ('cos', 'x', 4),
 }
 
+
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())
 def test_parse_func(key, val):
     args = (Node(arg) for arg in val[1:])
     assert parse(key) == FunctionNode(IdentifierNode(val[0]), *args)
+
+
+GETATTR_TEST_CASES = {
+    'f.x': ('f', 'x'),
+}
+
+
+@pytest.mark.parametrize('key,val', GETATTR_TEST_CASES.items())
+def test_parse_func(key, val):
+    assert parse(key) == BinOpNode('getattr',
+                                   IdentifierNode(val[0]),
+                                   IdentifierNode(val[1]))

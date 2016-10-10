@@ -124,6 +124,11 @@ ARITH_TEST_CASES = {
     "(3 + 4) % -5": BinOpNode("mod",
                               BinOpNode("add", NumberNode(3), NumberNode(4)),
                               NumberNode(-5)),
+    "-(3 + 4) % -5": BinOpNode("mod",
+                               UnaryOpNode('neg',
+                                           BinOpNode("add", NumberNode(3),
+                                                     NumberNode(4))),
+                               NumberNode(-5)),
 }
 
 
@@ -148,7 +153,7 @@ UNARY_TEST_CASES = {
 }
 
 @pytest.mark.parametrize("key,val", UNARY_TEST_CASES.items())
-def test_parse_arithmetic(key, val):
+def test_parse_unary_ops(key, val):
     assert parse(key) == val
 
 

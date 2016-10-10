@@ -85,39 +85,48 @@ def test_parse_string(key, val):
 
 
 COMMA_TEST_CASES = {
-    "a, b" : ('a', 'b'),
-    "1, 2, 'three'": (1, 2, 'three'),
-    "4 , 5 , six": (4, 5, 'six'),
+    "a, b" : CommaNode(IdentifierNode('a'), IdentifierNode('b')),
+    "1, 2, 'three'": CommaNode(NumberNode(1), NumberNode(2),
+                               StringNode('three')),
+    "4 , 5 , six": CommaNode(NumberNode(4), NumberNode(5),
+                             IdentifierNode('six')),
 }
 
 
 @pytest.mark.parametrize("key,val", COMMA_TEST_CASES.items())
 def test_parse_comma(key, val):
-    assert parse(key) == CommaNode(*map(Node, val))
+    assert parse(key) == val
 
 
 FUNC_TEST_CASES = {
-    'sin(x)': ('sin', 'x'),
-    'sin(2.0)': ('sin', 2.0),
-    'f21(12)': ('f21', 12),
-    '__("hello",\'there\')': ('__', "hello", "there"),
-    'cos(x, 4)': ('cos', 'x', 4),
+    'sin(x)': FunctionNode(IdentifierNode('sin'), IdentifierNode('x')),
+    'sin(2.0)': FunctionNode(IdentifierNode('sin'), NumberNode(2.0)),
+    'f21(12)': FunctionNode(IdentifierNode('f21'), NumberNode(12)),
+    '__("hello",\'there\')': FunctionNode(IdentifierNode('__'),
+                                      StringNode("hello"),
+                                      StringNode("there")),
+    'cos(x, 4)': FunctionNode(IdentifierNode('cos'), IdentifierNode('x'),
+                          NumberNode(4)),
 }
 
 
 @pytest.mark.parametrize('key,val', FUNC_TEST_CASES.items())
 def test_parse_func(key, val):
-    args = (Node(arg) for arg in val[1:])
-    assert parse(key) == FunctionNode(IdentifierNode(val[0]), *args)
+    assert parse(key) == val
 
 
 GETATTR_TEST_CASES = {
-    'f.x': ('f', 'x'),
+    'f.x': BinOpNode('getattr',
+                     IdentifierNode('f'),
+                     IdentifierNode('x')),
+    'f.x.y': BinOpNode('getattr',
+                       BinOpNode('getattr',
+                                 IdentifierNode('f'),
+                                 IdentifierNode('x')),
+                     IdentifierNode('y')),
 }
 
 
 @pytest.mark.parametrize('key,val', GETATTR_TEST_CASES.items())
-def test_parse_func(key, val):
-    assert parse(key) == BinOpNode('getattr',
-                                   IdentifierNode(val[0]),
-                                   IdentifierNode(val[1]))
+def test_parse_getattr(key, val):
+    assert parse(key) == val
